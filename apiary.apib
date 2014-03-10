@@ -1,0 +1,2938 @@
+HOST: http://test.jobfile.com.au/jobfileapi
+
+--- JobFile API 2706 ---
+
+
+--
+API_Usage
+
+The following is a general guide to common usage in the API - most of these can be applied to each type of resource below..
+--
+
+List all examples owned or available to the current user
+
+Default it will return 50 records.
+GET v1/example/
+< 200
+< Content-Type: application/json
+{ "items":[
+{ "exampleId":1, "exampleName":"My Example", "exampleDate":"1997-07-16T19:20:30.45+01:00" }
+] }
+
+Obtain a single example by ID
+GET v1/example/{exampleId}/
+< 200
+< Content-Type: application/json
+{ "exampleId":1, "exampleName":"My Example", "exampleDate":"1997-07-16T19:20:30.45+01:00" }
+
+This demonstrates paging for lists.
+    
+    PAGING
+    Set "offset" and "limit" to fetch limited records.
+    To get records 50 through 75
+    value would be like offset 50 and limit 25
+    
+This example returns the 50th record. ie start at 50 (offset) and return 1 record (limit)
+GET v1/example{?limit,offset}
+< 200
+< Content-Type: application/json
+{ "items":[
+{ "exampleId":50, "exampleName":"My 50th Example", "exampleDate":"1997-07-16T19:20:30.45+01:00" }
+] }
+  
+This demonstrates partial responses 
+  
+    PARTIAL RESPONSE
+    For Partial Response end user can mention the     
+    "Fields" parameter in the query string
+    Use a comma-separated list (fields=a,b) to select multiple fields.
+    Use an asterisk (fields=*) as a wildcard to identify all fields.
+    Use parentheses (fields=a(b,c)) to specify a group of nested properties that will be included in the API response.
+    Use a forward slash (fields=a/b) to identify a nested property.
+Default it will provide all the fields into the response depending on the access level of the user to the object
+
+GET v1/example{?fields(exampleId,exampleName)}
+< 200
+< Content-Type: application/json
+{ "items":[
+{ "exampleId":50, "exampleName":"My 50th Example"}
+] }
+
+This demonstrates query 
+  
+    QUERY
+    For a query - simply provide a search string - the return will implement a common search
+    using obvious key text fields to find matching values.
+    "q" parameter in the query string
+    Use a comma-separated list for or (q=a,b) to search for multiple values
+    Use a plus to perform and (fields=a+b) 
+    Use parentheses (fields=a+(b,c)) to search for a plus (b or c)
+The following example searches for 50th
+GET v1/example{?q}
+< 200
+< Content-Type: application/json
+{ "items":[
+{  "exampleId":50, "exampleName":"My 50th Example", "exampleDate":"1997-07-16T19:20:30.45+01:00" }
+] }
+
+Creates new record into example.
+POST V1/example
+> Content-Type: application/json
+{
+{
+"exampleField1":value,
+"exampleField2":value,
+"exampleField3":value
+}
+}
+< 201
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Modifies specific record by example id.
+PUT V1/example/{exampleId}
+> Content-Type: application/json
+{
+{
+"exampleKey":exampleId,
+"exampleField1":value,
+"exampleField2":value,
+"exampleField3":value
+}
+}
+< 200
+< Content-Type: application/json
+{ "status": "OK"}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"This is because the record does not exist. http://support.jobfile.com.au/solution/categories/45556/folders/150427/articles/88163-job-file-supplier-api-documentation-/20003" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+Removes particular record mentioned by exampleId.
+DELETE V1/example/{exampleId}
+> Content-Type: application/json
+< 200
+< Content-Type: application/json
+{ "status": "OK" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details": "This is because the record does not exist. http://support.jobfile.com.au/solution/categories/45556/folders/150427/articles/88163-job-file-supplier-api-documentation-/20003" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+This demonstrates filtering. Filtering is a more prescriptive version of search 
+  
+    FILTER
+    For a filter - the specific fields and restrictions are provided.
+    There is no specific field, you provide the field name of the entity and the list of values.
+The following example requests all examples with exampleName = "My 20th Example"
+
+GET v1/example/?exampleName=My 20th Example
+< 200
+< Content-Type: application/json
+{ "items":[
+{  "exampleId":20, "exampleName":"My 20th Example", "exampleDate":"1997-07-16T19:20:30.45+01:00" }
+] }
+
+
+This demonstrates status codes. Normal success will be 200, but others also apply. Normal success will be in the range 200
+and will return information as requested. Other codes in the range 300 indicate partial success but normally redirect.
+Codes in the range 400 are errors - and will return an error similar to the following. 500 is a fatal server error.
+More details can be found here http://en.wikipedia.org/wiki/Http_error_codes
+    
+    STATUS CODES
+    200 - success, data returned
+    201 - created, new data returned
+    202 - accepted, we have not modified anything, but we will process the result later.
+    204 - success, but not data relevant to be returned.
+    301 - the data you want is found here
+    400 - bad request - the default error status code
+    401 - not authenticated - you dont have permission to this.
+    403 - forbidden - requesting access to valid information, but for various reasons, maybe operations, we are not returning this data.
+    404 - not found, the request looks good, but it is for a resource that does not exist yet, or has been deleted.
+    500 - server side error - cant tell you more - if we could, server would be somewhat working better than it is.
+    The return fields are
+    status - the status code again
+    message - a simple message 
+    number - an error number which we can investigate with, and may publish details in the future
+    more_info - more information of a description nature which might help with your attempt to solve the problem.
+Obtain a single example by ID
+GET v1/example/{exampleId}/
+< 200
+< Content-Type: application/json
+{ "exampleId":1, "exampleName":"My Example", "exampleDate":"1997-07-16T19:20:30.45+01:00" }
++++++
+< 404
+< Content-Type: application/json
+{ "status" : "404", "message":"not found", "number": 20003, "more_info": "This is because the record does not exist. http://support.jobfile.com.au/solution/categories/45556/folders/150427/articles/88163-job-file-supplier-api-documentation-/20003"}
+
+Some situations will require suppression of error codes to avoid interuption by the transport stack, such as Flash applications.
+You can use a parameter to suppress the status code, but you will need to investigate the return data to ensure it is handled correctly.
+
+    SUPPRESS STATUS CODE
+    Use the parameter "suppress_status_code" such as suppress_status_code=true. The default is false.        
+Obtain a single example by ID
+GET v1/example/{exampleId}
+< 200
+< Content-Type: application/json
+{ "exampleId":1, "exampleName":"My Example", "exampleDate":"1997-07-16T19:20:30.45+01:00" }
++++++
+< 200
+< Content-Type: application/json
+{ "status" : "404", "message":"not found", "number": 20003, "more_info": "This is because the record does not exist. http://support.jobfile.com.au/solution/categories/45556/folders/150427/articles/88163-job-file-supplier-api-documentation-/20003"}
+
+
+--
+Accounts
+
+The following is a section of resources related to the Accounts
+--
+List  accounts.
+
+This supports paging, partial response as described in the Example above.
+GET v1/account
+< 200
+< Content-Type: application/json
+{ "items": [    
+  {
+    "accountId": 1,
+    "legalEntityName": "Beaumont Tiles",
+    "tradingAsName": "Beaumont Tiles",
+    "taxNumber": null,
+    "primaryUserId": 2,
+    "primaryEmailForNotices": "saltj@clickhome.com.au",
+    "alternativeEmailForNotices": "null",
+    "accountCommenceDate": "2012-12-11T08:00:00",
+    "accountSuspendedDate": "null",
+    "accountTerminatedDate": "null",
+    "primaryEmailValidatedDate": "null",
+    "alternativeEmailValidatedDate": null,
+    "accountReference": null,
+    "jobTermsLastAcceptedDate": "2012-12-11T08:00:00",
+    "jobTermsVersion": "0.1",
+    "stdExtRef": "",
+    "countryCode": "AU"
+  }
+] }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+Get account details by account id
+
+This supports partial response as described in the Example above.
+GET v1/account/1
+< 200
+< Content-Type: application/json
+{   "accountId": 1,
+    "legalEntityName": "Beaumont Tiles",
+    "tradingAsName": "Beaumont Tiles",
+    "taxNumber": null,
+    "primaryUserId": 2,
+    "primaryEmailForNotices": "saltj@clickhome.com.au",
+    "alternativeEmailForNotices": "null",
+    "accountCommenceDate": "2012-12-11T08:00:00",
+    "accountSuspendedDate": "null",
+    "accountTerminatedDate": "null",
+    "primaryEmailValidatedDate": "null",
+    "alternativeEmailValidatedDate": null,
+    "accountReference": null,
+    "jobTermsLastAcceptedDate": "2012-12-11T08:00:00",
+    "jobTermsVersion": "0.1",
+    "stdExtRef": "",
+    "countryCode": "AU"  
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+This method will create new account.
+POST v1/account
+> Content-Type: application/json
+{
+    "accountId": null,
+    "legalEntityName": "Beaumont Tiles",
+    "tradingAsName": "Beaumont Tiles",
+    "taxNumber": null,
+    "primaryUserId": 2,
+    "primaryEmailForNotices": "saltj@clickhome.com.au",
+    "alternativeEmailForNotices": "null",
+    "accountCommenceDate": "2012-12-11T08:00:00",
+    "accountSuspendedDate": "null",
+    "accountTerminatedDate": "null",
+    "primaryEmailValidatedDate": "null",
+    "alternativeEmailValidatedDate": null,
+    "accountReference": null,
+    "jobTermsLastAcceptedDate": "2012-12-11T08:00:00",
+    "jobTermsVersion": "0.1",
+    "stdExtRef": "",
+    "countryCode": "AU"
+  }
+< 201
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+Update existing account 
+This method will update existing account.
+
+We need to provide account information as below.
+PUT /v1/account/1
+> Content-Type: application/json
+{
+    "accountId": 1,
+    "legalEntityName": "Beaumont Tiles",
+    "tradingAsName": "Beaumont Tiles",
+    "taxNumber": null,
+    "primaryUserId": 2,
+    "primaryEmailForNotices": "saltj@clickhome.com.au",
+    "alternativeEmailForNotices": "null",
+    "accountCommenceDate": "2012-12-11T08:00:00",
+    "accountSuspendedDate": "null",
+    "accountTerminatedDate": "null",
+    "primaryEmailValidatedDate": "null",
+    "alternativeEmailValidatedDate": null,
+    "accountReference": null,
+    "jobTermsLastAcceptedDate": "2012-12-11T08:00:00",
+    "jobTermsVersion": "0.1",
+    "stdExtRef": "",
+    "countryCode": "AU"
+  }
+< 200
+< Content-Type: application/json
+{ "status": "ok"}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Delete the account by passing its id.
+In the mentioned case below user having id 1 will be deleted.
+
+DELETE  /v1/account/1
+< 200
+< Content-Type: application/json
+{ "status": "ok" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+List all OrgUnits owned be the specified Account
+GET v1/account/1/orgUnit
+< 200
+< Content-Type: application/json
+{
+    "items": 
+    [ 
+        {
+            "orgUnitId":1,
+            "accountId":17,
+            "orgUnitName":"My Team A",
+            "parentOrgUnitId":null,
+            "locations": [{
+                            "type": "Office", "address": 
+                            {
+                                "address":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+                                "lotNo":"7484",
+                                "streetNo":null,
+                                "unitNo":null,
+                                "levelNo":null,
+                                "street1":"Croft Way",
+                                "street2":"",
+                                "suburb":"The Vines",
+                                "state":"WA",
+                                "postCode":"6069",
+                                "country": "Australia"
+                                "standardDirection":null,
+                                "standardInstruction":null,
+                                "latitude":"-31.75637160",
+                                "longitude":"115.98818830"        
+                            }
+                        }],
+            "webURL":null,
+            "taxNumber":null,
+            "salutation":null,
+            "prefix":null,
+            "suffix":null,
+            "firstName":"First Name",
+            "otherName":null,
+            "lastName":"Last Name",
+            "fullName":"First Name Last Name",
+            "jobTitle":"Job Title",
+            "workPhone":"123456",
+            "mobilePhone":"9876543210",
+            "faxNumber":"25896",
+            "emailAddress":"test@gmail.com",
+            "contactName":"First Name Last Name",
+            "contactMethod":"E",
+            "orgUnitType":3,
+            "address":null,
+            "resourceCapacity":null,
+            "resourceWorkRate":null,
+            "resourceProdUnits":null,
+            "jobFileId":null,
+            "gtin":null
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+List all Account - Account links for the specified Account
+This provides a list of the settings that the account shares details with.
+GET v1/account/1/links
+< 200
+< Content-Type: application/json
+{ "items": 
+    [
+        { "orgUnitName":"Crosby Tiles", "permissions": 
+            [
+                { "permission":"share_orgunits", level:"account" },
+                { "permission":"reject_tasks", level:"account" }
+            ] 
+        }
+    ] 
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+--
+OrgUnits
+
+The following is a section of resources related to the OrgUnits
+An OrgUnit is a generic place holder for all of the following... managers, companies, virtual queue, resource, trade, subcontractor...
+--
+
+List all orgUnits by authenticated user id
+
+This supports paging, partial response as described in the Example above.
+
+for sample :         
+        
+        TEAM  v1/orgUnit?type=team -- show me all the organisations in my team 
+        LINKED v1/orgUnit?type=linked -- show me all external organisations (different account) that I have linked with
+        SUBORG v1/orgUnit?type=suborg -- show me orgUnits that are subordinates of this one..
+
+
+GET v1/orgUnit
+< 200
+< Content-Type: application/json
+{ "items": [
+       {
+            "orgUnitId":1,
+            "accountId":17,
+            "orgUnitName":"My Team A",
+            "parentOrgUnitId":null,
+            "locations":[ {
+                            "type": "Office", "address": 
+                            {
+                                "address":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+                                "lotNo":"7484",
+                                "streetNo":null,
+                                "unitNo":null,
+                                "levelNo":null,
+                                "street1":"Croft Way",
+                                "street2":"",
+                                "suburb":"The Vines",
+                                "state":"WA",
+                                "postCode":"6069",
+                                "country": "Australia"
+                                "standardDirection":null,
+                                "standardInstruction":null,
+                                "latitude":"-31.75637160",
+                                "longitude":"115.98818830"                                
+                            }
+                        }],
+            "webURL":null,
+            "taxNumber":null,
+            "salutation":null,
+            "prefix":null,
+            "suffix":null,
+            "firstName":"First Name",
+            "otherName":null,
+            "lastName":"Last Name",
+            "fullName":"First Name Last Name",
+            "jobTitle":"Job Title",
+            "workPhone":"123456",
+            "mobilePhone":"9876543210",
+            "faxNumber":"25896",
+            "emailAddress":"test@gmail.com",
+            "contactName":"First Name Last Name",
+            "contactMethod":"E",
+            "orgUnitType":3,
+            "address":null,
+            "resourceCapacity":null,
+            "resourceWorkRate":null,
+            "resourceProdUnits":null,
+            "jobFileId":null,
+            "gtin":null
+        }
+    ]        
+} 
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+Get details of organisation by organisation id
+
+This supports  partial response as described in the Example above.
+GET v1/orgUnit/1
+< 200
+< Content-Type: application/json
+{  
+    {
+        "orgUnitId":1,
+        "accountId":17,
+        "orgUnitName":"My Team A",
+        "parentOrgUnitId":null,
+        "locations": [ {"type": "Office", "address": {
+                "address":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+                "lotNo":"7484",
+                "streetNo":null,
+                "unitNo":null,
+                "levelNo":null,
+                "street1":"Croft Way",
+                "street2":"",
+                "suburb":"The Vines",
+                "state":"WA",
+                "postCode":"6069",
+                "country": "Australia"
+                "standardDirection":null,
+                "standardInstruction":null,
+                "latitude":"-31.75637160",
+                "longitude":"115.98818830"        
+            }}],
+        "webURL":null,
+        "taxNumber":null,
+        "salutation":null,
+        "prefix":null,
+        "suffix":null,
+        "firstName":"First Name",
+        "otherName":null,
+        "lastName":"Last Name",
+        "fullName":"First Name Last Name",
+        "jobTitle":"Job Title",
+        "workPhone":"123456",
+        "mobilePhone":"9876543210",
+        "faxNumber":"25896",
+        "emailAddress":"test@gmail.com",
+        "contactName":"First Name Last Name",
+        "contactMethod":"E",
+        "orgUnitType":3,
+        "address":null,
+        "resourceCapacity":null,
+        "resourceWorkRate":null,
+        "resourceProdUnits":null,
+        "jobFileId":null,
+        "gtin":null
+    } 
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+Get job list by organisation id
+
+This supports paging, partial response as described in the Example above.
+GET v1/orgUnit/1/job
+< 200
+< Content-Type: application/json
+{ "items": 
+    [   
+        {
+            "jobId":8049,
+            "jobNumber":"Job#03",
+            "jobStatus":"Pending",
+            "jobOwnerId":188,
+            "managerId":null,
+            "parentJobId":null,
+            "projectCode":"Project Code",
+            "allowDays":null,
+            "jobPriority":2,
+            "lotAddress":"     ",
+            "lotNo":null,
+            "lotStreetNo":null,
+            "lotUnitNo":null,
+            "lotLevelNo":null,
+            "lotStreet1":null,
+            "lotStreet2":null,
+            "lotSuburb":null,
+            "lotState":null,
+            "lotPostCode":null,
+            "standardDirection":null,
+            "standardInstruction":null,
+            "programmCompleteDate":"2013-04-01T00:00:00",
+            "clientAdvisedDate":"2013-04-16T00:00:00",
+            "scheduledStartDate":"2013-04-15T00:00:00",
+            "estimatedCompleteDate":"2013-04-17T00:00:00",
+            "estimatedClientMoveIn":"2013-04-08T00:00:00",
+            "latitude":null,
+            "longitude":null,
+            "userDefined1":null,
+            "userDefined2":null,
+            "userDefined3":null,
+            "userDefined4":null,
+            "userDefined5":null,
+            "userDefined6":null,
+            "userDefined7":null,
+            "userDefined8":null,
+            "userDefined9":null,
+            "userDefined10":null,
+            "notes":null
+        },
+        {
+            "jobId":8048,
+            "jobNumber":"Job#03",
+            "jobStatus":"Pending",
+            "jobOwnerId":188,
+            "managerId":317,
+            "parentJobId":null,
+            "projectCode":"Project Code",
+            "allowDays":null,
+            "jobPriority":2,
+            "lotAddress":"     ",
+            "lotNo":null,
+            "lotStreetNo":null,
+            "lotUnitNo":null,
+            "lotLevelNo":null,
+            "lotStreet1":null,
+            "lotStreet2":null,
+            "lotSuburb":null,
+            "lotState":null,
+            "lotPostCode":null,
+            "standardDirection":"dfg",
+            "standardInstruction":"gdf",
+            "programmCompleteDate":"2013-04-01T00:00:00",
+            "clientAdvisedDate":"2013-04-16T00:00:00",
+            "scheduledStartDate":"2013-04-15T00:00:00",
+            "estimatedCompleteDate":"2013-04-17T00:00:00",
+            "estimatedClientMoveIn":"2013-04-08T00:00:00",
+            "latitude":null,
+            "longitude":null,
+            "userDefined1":"dfgdf",
+            "userDefined2":"gdfg",
+            "userDefined3":"fg",
+            "userDefined4":null,
+            "userDefined5":null,
+            "userDefined6":"gfdg",
+            "userDefined7":null,
+            "userDefined8":null,
+            "userDefined9":null,
+            "userDefined10":null,
+            "notes":null
+        }
+    ] 
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Get task list by organisation id
+
+This supports paging, partial response and filtering as described in the Example above.
+GET v1/orgUnit/1/task
+< 200
+< Content-Type: application/json
+{ "items": 
+    [
+        {
+            "idTask":26968,
+            "taskReference":"521220",
+            "itemName":"Stormwater Tanks Only",
+            "jobNo":"101343M",
+            "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+            "lotUnitNo":null,
+            "lotNo":"820",
+            "lotStreet1":"Belvedere Rise",
+            "lotSuburb":"Roleystone",
+            "ownerName":"RedInk Homes",
+            "plannedDate":null,
+            "estimatedStartDate":"2012-08-20T08:00:00",
+            "estimatedCompleteDate":"2012-08-20T08:00:00",
+            "completedDate":null,
+            "startDate":null,
+            "dueDate":null,
+            "acceptedDate":null,
+            "resourceStartDate":null,
+            "resourceCompleteDate":null,
+            "resourceDueDate":null,
+            "resourceStatus":null,
+            "managerId":104,
+            "ownerId":5,
+            "percentageComplete":0.000,
+            "resourcePercentageComplete":null,
+            "customMessage":"No Job Specific Instructions available",
+            "deliveryText":"No Standard Instructions available",
+            "managerFullName":"Luke Gilliland",
+            "latitude":"-32.1122836",
+            "longitude":"116.0697535",
+            "jobId":4254,
+            "resourceFullName":"Rayco Plumbing",
+            "resourceId":189,
+            "rejectReason":null,
+            "rejectDescription":null
+        },
+        {
+            "idTask":26969,
+            "taskReference":"521154",
+            "itemName":"Rain Water Tanks",
+            "jobNo":"101343M",
+            "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+            "lotUnitNo":null,"LotNo":"820",
+            "lotStreet1":"Belvedere Rise",
+            "lotSuburb":"Roleystone",
+            "sgOwnerName":"RedInk Homes",
+            "plannedDate":null,
+            "estimatedStartDate":"2012-08-20T08:00:00",
+            "estimatedCompleteDate":"2012-08-20T08:00:00",
+            "completedDate":null,
+            "startDate":null,
+            "dueDate":null,
+            "acceptedDate":null,
+            "resourceStartDate":null,
+            "resourceCompleteDate":null,
+            "resourceDueDate":null,
+            "resourceStatus":null,
+            "managerId":104,
+            "ownerId":5,
+            "percentageComplete":0.000,
+            "resourcePercentageComplete":null,
+            "customMessage":"No Job Specific Instructions available",
+            "deliveryText":"No Standard Instructions available",
+            "managerFullName":"Luke Gilliland",
+            "latitude":"-32.1122836",
+            "longitude":"116.0697535",
+            "jobId":4254,
+            "resourceFullName":"Rayco Plumbing",
+            "resourceId":189,
+            "rejectReason":null,
+            "rejectDescription":null
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Get a list of PO by organisation
+
+This supports paging, partial response  as described in the Example above.
+GET v1/orgUnit/186/purchaseOrder
+< 200
+< Content-Type: application/json
+{ "items": 
+    [
+        {
+            "poHeaders":
+            [
+                {
+                    "poHeaderId":4,
+                    "jobID":7964,
+                    "resourceId":186,    
+                    "requisitionId":null,
+                    "poReference":"31348/B310",
+                    "requisitionReference":"sgRequisitionReference",        
+                    "contactPerson":null,
+                    "contactMethod":null,
+                    "contactBy":null,
+                    "poDate":"2013-02-20T12:42:08.057",
+                    "poStatus":Issued,
+                    "approvedPercent":0.0,
+                    "totalPrice":null,
+                    "totalTax":null,
+                    "partialPayment":true,    
+                    "poLines":
+                    [
+                        {  
+                            "poLineID":9,
+                            "poHeaderID":4,
+                            "jobID":7964,
+                            "poLineReference":null,
+                            "sequenceNumber":10,
+                            "lineQuality":9306.00000,
+                            "lineCutLength":null,
+                            "costCode":"B310",
+                            "itemCode":"B310.0060",
+                            "itemDescription":"230x110x76 (STD) - FACE BRICK BRICK SUPPLIER: MIDLAND BRICK SELECTION: CAMEO",
+                            "uom":null,
+                            "unitPrice":572.4500,
+                            "extendedPrice":5327219.7000,
+                            "extendedTax":532721.9700
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+Get timesheet list by orgUnit id
+
+This supports paging, partial response as described in the Example above.
+
+
+GET v1/orgUnit/186/timesheet
+< 200
+< Content-Type: application/json
+{
+  "items": [
+    {
+      "timesheetId": 1,
+      "jobNumber": "B346",
+      "taskId": "4254",
+      "recordedDate": "2013-04-01T00:00:00",
+      "startDate": "2013-04-01T00:00:00",
+      "durationHours": 5,
+      "comment": "My comments",
+      "isLocked": "false",
+      "resourceName": "crosby tiles"
+    },
+    {
+      "timesheetId": 2,
+      "jobNumber": "B346",
+      "taskId": "4255",
+      "recordedDate": "2013-04-01T00:00:00",
+      "startDate": "2013-04-01T00:00:00",
+      "durationHours": 15,
+      "comment": "My comments",
+      "isLocked": "false",
+      "resourceName": "crosby tiles"
+    }
+  ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Using the below method current OrgUnit can create team.
+As shown in the sample data user need to provide 
+OrgUnitName, Salutation, FirstName, OtherName etc. to create the Team.
+POST /v1/orgUnit/1/team
+> Content-Type: application/json
+{
+    {
+        "orgUnitId":null,
+        "accountId":null,
+        "orgUnitName":"My Team A",
+        "parentOrgUnitId":null,
+        "locations": 
+        [ 
+            {
+                "type": "Office", "address": 
+                {
+                    "address":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+                    "lotNo":"7484",
+                    "streetNo":null,
+                    "unitNo":null,
+                    "levelNo":null,
+                    "street1":"Croft Way",
+                    "street2":"",
+                    "suburb":"The Vines",
+                    "state":"WA",
+                    "postCode":"6069",
+                    "country": "Australia"
+                    "standardDirection":null,
+                    "standardInstruction":null,
+                    "latitude":"-31.75637160",
+                    "longitude":"115.98818830"        
+                }
+            }
+        ],
+        "webURL":null,
+        "taxNumber":null,
+        "salutation":null,
+        "prefix":null,
+        "suffix":null,
+        "firstName":"First Name",
+        "otherName":null,
+        "lastName":"Last Name",
+        "fullName":"First Name Last Name",
+        "jobTitle":"Job Title",
+        "workPhone":"123456",
+        "mobilePhone":"9876543210",
+        "faxNumber":"25896",
+        "emailAddress":"test@gmail.com",
+        "contactName":"First Name Last Name",
+        "contactMethod":"E",
+        "orgUnitType":3,
+        "address":null,
+        "resourceCapacity":null,
+        "resourceWorkRate":null,
+        "resourceProdUnits":null,
+        "jobFileId":null,
+        "gtin":null
+    }    
+}
+< 201
+< Content-Type: application/json
+{ "status": "created"}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Using the below method current OrgUnit can create Sub-Organisation.
+As shown in the sample data user need to provide 
+OrganisationName, Salutation, FirstName, OtherName etc. to create the Team.
+POST /v1/orgUnit/1/subOrg
+> Content-Type: application/json
+{    
+    {
+        "orgUnitId":null,
+        "accountId":null,
+        "orgUnitName":"My Sub-Organisation A",
+        "parentOrgUnitId":null,
+        "street1":null,
+        "street2":null,
+        "suburb":null,
+        "state":null,
+        "postCode":null,
+        "webUrl":null,
+        "taxNumber":null,
+        "salutation":null,
+        "prefix":null,
+        "suffix":null,
+        "firstName":"First Name",
+        "otherName":null,
+        "lastName":"Last Name",
+        "fullName":"First Name Last Name",
+        "jobTitle":"Job Title",
+        "workPhone":"123456",
+        "mobilePhone":"9876543210",
+        "faxNumber":"25896",
+        "emailAddress":"test@gmail.com",
+        "contactName":"First Name Last Name",
+        "contactMethod":"E",
+        "orgUnitType":3,
+        "address":null,
+        "resourceCapacity":null,
+        "resourceWorkRate":null,
+        "resourceProdUnits":null,
+        "jobFileID":null,
+        "gtin":null,
+        "latitude":null,
+        "longitude":null
+    }
+}
+< 201
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Using the below method current OrgUnit can update team.
+As shown in the sample data user need to provide 
+OrganisationName, Salutation, FirstName, OtherName etc. to update the Team.
+PUT /v1/OrgUnit/188/team/310
+> Content-Type: application/json
+{
+    "orgUnitId":310,
+    "accountId":null,
+    "organisationName":"My Team A",
+    "parentOrgUnitId":null,
+    "street1":null,
+    "street2":null,
+    "suburb":null,
+    "state":null,
+    "postCode":null,
+    "webURL":null,
+    "taxNumber":null,
+    "salutation":null,
+    "prefix":null,
+    "suffix":null,
+    "firstName":"First Name",
+    "otherName":null,
+    "lastName":"Last Name",
+    "fullName":"First Name Last Name",
+    "jobTitle":"Job Title",
+    "workPhone":"123456",
+    "mobilePhone":"9876543210",
+    "faxNumber":"25896",
+    "emailAddress":"test@gmail.com",
+    "contactName":"First Name Last Name",
+    "contactMethod":"E",
+    "orgUnitType":3,
+    "address":null,
+    "resourceCapacity":null,
+    "resourceWorkRate":null,
+    "resourceProdUnits":null,
+    "jobFileId":null,
+    "gtin":null,
+    "latitude":null,
+    "longitude":null
+}
+< 200
+< Content-Type: application/json
+{ "status": "OK" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Using the below method current OrgUnit can update Sub-Organisation.
+As shown in the sample data user need to provide 
+OrganisationName, Salutation, FirstName, OtherName etc. to update the Sub-Organisation.
+PUT /v1/OrgUnit/188/subOrg/213
+> Content-Type: application/json
+{
+    "orgUnitId":213,
+    "accountId":null,
+    "orgUnitName":"Adam Barnes",
+    "parentOrganisationId":188,
+     "locations": [ {"type": "Office", "address": {
+            "address":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+            "lotNo":"7484",
+            "streetNo":null,
+            "unitNo":null,
+            "levelNo":null,
+            "street1":"Croft Way",
+            "street2":"",
+            "suburb":"The Vines",
+            "state":"WA",
+            "postCode":"6069",
+            "standardDirection":null,
+            "standardInstruction":null,
+            "latitude":"-31.75637160",
+            "longitude":"115.98818830"        
+        }}],
+    "webURL":null,
+    "taxNumber":null,
+    "salutation":null,
+    "prefix":null,
+    "suffix":null,
+    "firstName":"Adam",
+    "otherName":null,
+    "lastName":"Barnes",
+    "fullName":"Adam Barnes",
+    "jobTitle":null,
+    "workPhone":null,
+    "mobilePhone":null,
+    "faxNumber":null,
+    "emailAddress":"SampleRecipient@vsvr-clkdemo1.com",
+    "contactName":null,
+    "contactMethod":"E",
+    "orgUnitType":null,
+    "address":null,
+    "resourceCapacity":null,
+    "resourceWorkRate":null,
+    "resourceProdUnits":null,
+    "jobFileId":null,
+    "gtin":null
+}
+< 200
+< Content-Type: application/json
+{ "status": "OK" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Using the below method current Organisation can delete
+their team/sub-organisation.
+Here the owner organisation have to provide the valid teamId or Sub-Organisation Id
+in order to delete the existing team/sub-organisation.
+DELETE  /v1/OrgUnit/440
+< 200
+< Content-Type: application/json
+{ "status": "ok"}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+--
+Job
+
+The following is a section of resources related to the jobs
+
+--
+List  jobs.
+
+This supports paging, partial response as described in the Example above.
+GET v1/job
+< 200
+< Content-Type: application/json
+{ "items": 
+    [
+        {
+            "jobId":8049,
+            "jobNumber":"Job#03",
+            "jobStatus":"Pending",
+            "jobOwnerId":188,
+            "managerId":null,
+            "parentJobId":null,
+            "projectCode":"Project Code",
+            "allowDays":null,
+            "jobPriority":2,
+            "lotAddress":"     ",
+            "lotNo":null,
+            "lotStreetNo":null,
+            "lotUnitNo":null,
+            "lotLevelNo":null,
+            "lotStreet1":null,
+            "lotStreet2":null,
+            "lotSuburb":null,
+            "lotState":null,
+            "lotPostCode":null,
+            "standardDirection":null,
+            "standardInstruction":null,
+            "programmCompleteDate":"2013-04-01T00:00:00",
+            "clientAdvisedDate":"2013-04-16T00:00:00",
+            "scheduledStartDate":"2013-04-15T00:00:00",
+            "estimatedCompleteDate":"2013-04-17T00:00:00",
+            "estimatedClientMoveIn":"2013-04-08T00:00:00",
+            "latitude":null,
+            "longitude":null,
+            "userDefined1":null,
+            "userDefined2":null,
+            "userDefined3":null,
+            "userDefined4":null,
+            "userDefined5":null,
+            "userDefined6":null,
+            "userDefined7":null,
+            "userDefined8":null,
+            "userDefined9":null,
+            "userDefined10":null,
+            "notes":null
+        },
+        {
+            "jobId":8048,
+            "jobNumber":"Job#03",
+            "jobStatus":"Pending",
+            "jobOwnerId":188,
+            "managerId":317,
+            "parentJobId":null,
+            "projectCode":"Project Code",
+            "allowDays":null,
+            "jobPriority":2,
+            "lotAddress":"     ",
+            "lotNo":null,
+            "lotStreetNo":null,
+            "lotUnitNo":null,
+            "lotLevelNo":null,
+            "lotStreet1":null,
+            "lotStreet2":null,
+            "lotSuburb":null,
+            "lotState":null,
+            "lotPostCode":null,
+            "standardDirection":"dfg",
+            "standardInstruction":"gdf",
+            "programmCompleteDate":"2013-04-01T00:00:00",
+            "clientAdvisedDate":"2013-04-16T00:00:00",
+            "scheduledStartDate":"2013-04-15T00:00:00",
+            "estimatedCompleteDate":"2013-04-17T00:00:00",
+            "estimatedClientMoveIn":"2013-04-08T00:00:00",
+            "latitude":null,
+            "longitude":null,
+            "userDefined1":"dfgdf",
+            "userDefined2":"gdfg",
+            "userDefined3":"fg",
+            "userDefined4":null,
+            "userDefined5":null,
+            "userDefined6":"gfdg",
+            "userDefined7":null,
+            "userDefined8":null,
+            "userDefined9":null,
+            "userDefined10":null,
+            "notes":null
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Get all details of job by job id
+
+This supports  partial response as described in the Example above.
+GET v1/job/1
+< 200
+< Content-Type: application/json
+{ 
+    {
+        "jobId":1,
+        "jobNumber":"122132M",
+        "jobStatus":"Active",
+        "jobOwnerId":5,
+        "managerId":109,
+        "parentJobId":null,
+        "projectCode":"",
+        "allowDays":100,
+        "jobPriority":0,
+        "lotAddress":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+        "lotNo":"7484",
+        "lotStreetNo":null,
+        "lotUnitNo":null,
+        "lotLevelNo":null,
+        "lotStreet1":"Croft Way",
+        "lotStreet2":"",
+        "lotSuburb":"The Vines",
+        "lotState":"WA",
+        "lotPostCode":"6069",
+        "standardDirection":null,
+        "standardInstruction":null,
+        "programmCompleteDate":"2012-12-11T08:00:00",
+        "clientAdvisedDate":"2012-08-12T08:00:00",
+        "scheduledStartDate":null,
+        "estimatedCompleteDate":null,
+        "estimatedClientMoveIn":null,
+        "latitude":"-31.75637160",
+        "longitude":"115.98818830",
+        "userDefined1":"",
+        "userDefined2":"304760.00",
+        "userDefined3":"",
+        "userDefined4":"",
+        "userDefined5":"5",
+        "userDefined6":"",
+        "userDefined7":"",
+        "userDefined8":"",
+        "userDefined9":null,
+        "userDefined10":null,
+        "notes":""
+    }
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+This method will create new job.
+POST v1/job
+> Content-Type: application/json
+{
+    "jobId":null,
+    "jobNumber":"122132M",
+    "jobStatus":"Pending",
+    "jobOwnerId":5,
+    "managerId":109,
+    "parentJobId":null,
+    "projectCode":"",
+    "allowDays":100,
+    "jobPriority":0,
+    "lotAddress":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+    "lotNo":"7484",
+    "lotStreetNo":null,
+    "lotUnitNo":null,
+    "lotLevelNo":null,
+    "lotStreet1":"Croft Way",
+    "lotStreet2":"",
+    "lotSuburb":"The Vines",
+    "lotState":"WA",
+    "lotPostCode":"6069",
+    "standardDirection":null,
+    "standardInstruction":null,
+    "programmCompleteDate":"2012-12-11T08:00:00",
+    "clientAdvisedDate":"2012-08-12T08:00:00",
+    "scheduledStartDate":null,
+    "estimatedCompleteDate":null,
+    "estimatedClientMoveIn":null,
+    "latitude":"-31.75637160",
+    "longitude":"115.98818830",
+    "userDefined1":"",
+    "userDefined2":"304760.00",
+    "userDefined3":"",
+    "userDefined4":"",
+    "userDefined5":"5",
+    "userDefined6":"",
+    "userDefined7":"",
+    "userDefined8":"",
+    "userDefined9":null,
+    "userDefined10":null,
+    "notes":""
+}
+< 201
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+This method will update the existing job.
+PUT v1/job/1
+> Content-Type: application/json
+{
+    "jobId":1,
+    "jobNumber":"122132M",
+    "jobStatus":"Pending",
+    "jobOwnerId":5,
+    "managerId":109,
+    "parentJobId":null,
+    "projectCode":"",
+    "allowDays":100,
+    "jobPriority":0,
+    "lotAddress":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+    "lotNo":"7484",
+    "lotStreetNo":null,
+    "lotUnitNo":null,
+    "lotLevelNo":null,
+    "lotStreet1":"Croft Way",
+    "lotStreet2":"",
+    "lotSuburb":"The Vines",
+    "lotState":"WA",
+    "lotPostCode":"6069",
+    "standardDirection":null,
+    "standardInstruction":null,
+    "programmCompleteDate":"2012-12-11T08:00:00",
+    "clientAdvisedDate":"2012-08-12T08:00:00",
+    "scheduledStartDate":null,
+    "estimatedCompleteDate":null,
+    "estimatedClientMoveIn":null,
+    "latitude":"-31.75637160",
+    "longitude":"115.98818830",
+    "userDefined1":"",
+    "userDefined2":"304760.00",
+    "userDefined3":"",
+    "userDefined4":"",
+    "userDefined5":"5",
+    "userDefined6":"",
+    "userDefined7":"",
+    "userDefined8":"",
+    "userDefined9":null,
+    "userDefined10":null,
+    "notes":""
+}
+< 200
+< Content-Type: application/json
+{ "status": "OK" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Delete the job by passing its id.
+
+DELETE  /v1/job/1
+< 200
+< Content-Type: application/json
+{ "status": "OK" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+
+Get task list by job id
+
+This supports paging, partial response, filter and task status codes as described in the Example above.
+
+
+GET v1/job/4254/tasks
+< 200
+< Content-Type: application/json
+{ 
+    "items": 
+    [
+        {
+            "idTask":26968,
+            "taskReference":"521220",
+            "itemName":"Stormwater Tanks Only",
+            "jobNo":"101343M",
+            "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+            "lotUnitNo":null,
+            "lotNo":"820",
+            "lotStreet1":"Belvedere Rise",
+            "lotSuburb":"Roleystone",
+            "ownerName":"RedInk Homes",
+            "plannedDate":null,
+            "estimatedStartDate":"2012-08-20T08:00:00",
+            "estimatedCompleteDate":"2012-08-20T08:00:00",
+            "completedDate":null,
+            "startDate":null,
+            "dueDate":null,
+            "acceptedDate":null,
+            "resourceStartDate":null,
+            "resourceCompleteDate":null,
+            "resourceDueDate":null,
+            "resourceStatus":null,
+            "managerId":104,
+            "ownerId":5,
+            "percentageComplete":0.000,
+            "resourcePercentageComplete":null,
+            "customMessage":"No Job Specific Instructions available",
+            "deliveryText":"No Standard Instructions available",
+            "managerFullName":"Luke Gilliland",
+            "latitude":"-32.1122836",
+            "longitude":"116.0697535",
+            "jobId":4254,
+            "resourceFullName":"Rayco Plumbing",
+            "resourceId":189,
+            "rejectReason":null,
+            "rejectDescription":null
+        },
+        {
+            "idTask":26969,
+            "taskReference":"521154",
+            "itemName":"Rain Water Tanks",
+            "jobNo":"101343M",
+            "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+            "lotUnitNo":null,"LotNo":"820",
+            "lotStreet1":"Belvedere Rise",
+            "lotSuburb":"Roleystone",
+            "sgOwnerName":"RedInk Homes",
+            "plannedDate":null,
+            "estimatedStartDate":"2012-08-20T08:00:00",
+            "estimatedCompleteDate":"2012-08-20T08:00:00",
+            "completedDate":null,
+            "startDate":null,
+            "dueDate":null,
+            "acceptedDate":null,
+            "resourceStartDate":null,
+            "resourceCompleteDate":null,
+            "resourceDueDate":null,
+            "resourceStatus":null,
+            "managerId":104,
+            "ownerId":5,
+            "percentageComplete":0.000,
+            "resourcePercentageComplete":null,
+            "customMessage":"No Job Specific Instructions available",
+            "deliveryText":"No Standard Instructions available",
+            "managerFullName":"Luke Gilliland",
+            "latitude":"-32.1122836",
+            "longitude":"116.0697535",
+            "jobId":4254,
+            "resourceFullName":"Rayco Plumbing",
+            "resourceId":189,
+            "rejectReason":null,
+            "rejectDescription":null
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Get task list by job id and task type
+
+This supports paging, partial response and task status codes as described in the Example above.
+
+here task type parameter can be pass to filter task for perticular job.
+
+for sample :         
+        
+        REQUESTED  /v1/job/45/tasks?type=requested
+        BOOKEDING /v1/job/45/tasks?type=bookedin
+        FUTURE /v1/job/45/tasks?type=future
+        COMPLETE  /v1/job/45/tasks?type=complete
+        COMPLETIONMISMATCH  /v1/job/45/tasks?type=completionmismatch
+        
+GET v1/job/1/tasks?type=requested
+< 200
+< Content-Type: application/json
+{ 
+    "items": 
+    [
+        {
+            "idTask":26968,
+            "taskReference":"521220",
+            "itemName":"Stormwater Tanks Only",
+            "jobNo":"101343M",
+            "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+            "lotUnitNo":null,
+            "lotNo":"820",
+            "lotStreet1":"Belvedere Rise",
+            "lotSuburb":"Roleystone",
+            "sgOwnerName":"RedInk Homes",
+            "plannedDate":null,
+            "estimatedStartDate":"2012-08-20T08:00:00",
+            "estimatedCompleteDate":"2012-08-20T08:00:00",
+            "completedDate":null,
+            "startDate":null,
+            "dueDate":null,
+            "acceptedDate":null,
+            "resourceStartDate":null,
+            "resourceCompleteDate":null,
+            "resourceDueDate":null,
+            "resourceStatus":null,
+            "managerId":104,
+            "ownerId":5,
+            "percentageComplete":0.000,
+            "resourcePercentageComplete":null,
+            "customMessage":"No Job Specific Instructions available",
+            "deliveryText":"No Standard Instructions available",
+            "managerFullName":"Luke Gilliland",
+            "latitude":"-32.1122836",
+            "longitude":"116.0697535",
+            "jobId":1,
+            "resourceFullName":"Rayco Plumbing",
+            "resourceId":189,
+            "rejectReason":null,
+            "rejectDescription":null
+        },
+        {
+            "idTask":26969,
+            "taskReference":"521220",
+            "itemName":"Stormwater Tanks Only",
+            "jobNo":"101343M",
+            "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+            "lotUnitNo":null,
+            "lotNo":"820",
+            "lotStreet1":"Belvedere Rise",
+            "lotSuburb":"Roleystone",
+            "sgOwnerName":"RedInk Homes",
+            "plannedDate":null,
+            "estimatedStartDate":"2012-08-20T08:00:00",
+            "estimatedCompleteDate":"2012-08-20T08:00:00",
+            "completedDate":null,
+            "startDate":null,
+            "dueDate":null,
+            "acceptedDate":null,
+            "resourceStartDate":null,
+            "resourceCompleteDate":null,
+            "resourceDueDate":null,
+            "resourceStatus":null,
+            "managerId":104,
+            "ownerId":5,
+            "percentageComplete":0.000,
+            "resourcePercentageComplete":null,
+            "customMessage":"No Job Specific Instructions available",
+            "deliveryText":"No Standard Instructions available",
+            "managerFullName":"Luke Gilliland",
+            "latitude":"-32.1122836",
+            "longitude":"116.0697535",
+            "jobId":1,
+            "resourceFullName":"Rayco Plumbing",
+            "resourceId":189,
+            "rejectReason":null,
+            "rejectDescription":null
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Get the purchase orders for specific Job.
+
+This supports paging, partial response as described in the Example above.
+
+
+GET v1/job/7964/purchaseOrder
+< 200
+< Content-Type: application/json
+{ "items": 
+    [
+        { 
+            "poHeaders":
+            [
+                {
+                    "poHeaderId":4,
+                    "jobId":7964,
+                    "resourceId":186,
+                    "managingResourceId":null,
+                    "requisitionId":null,
+                    "poReference":"31348/B310",
+                    "requisitionReference":"sgRequisitionReference",
+                    "resourceExtReference":null,
+                    "managingResourceExtRef":null,
+                    "contactPerson":null,
+                    "contactMethod":null,
+                    "contactBy":null,
+                    "poDate":"2013-02-20T12:42:08.057",
+                    "poStatus":"I",
+                    "approvedPercent":0.0,
+                    "totalPrice":null,
+                    "totalTax":null,
+                    "partialPayment":true
+                    "poLines":
+                        [{
+                            "poLineId":9,
+                            "poHeaderId":4,
+                            "jobId":7964,
+                            "poLineReference":null,
+                            "sequenceNumber":10,
+                            "lineQuality":9306.00000,
+                            "lineCutLength":null,
+                            "costCode":"B310",
+                            "itemCode":"B310.0060",
+                            "itemDescription":"230x110x76 (STD) - FACE BRICK BRICK SUPPLIER: MIDLAND BRICK SELECTION: CAMEO",
+                            "uom":null,
+                            "unitPrice":572.4500,
+                            "extendedPrice":5327219.7000,
+                            "extendedTax":532721.9700
+                           }]                           
+                }
+            ]
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+
+Return the owner orgUnit of this Job 
+This supports  partial response as described in the Example above.
+
+GET v1/job/4254/owner
+< 200
+< Content-Type: application/json
+{        
+    {
+        "orgUnitId":5,
+        "accountId":null,
+        "orgUnitName":"RedInk Homes",
+        "parentOrgUnitId":null,
+        "street1":null,
+        "street2":null,
+        "suburb":null,
+        "state":null,
+        "postCode":null,
+        "webUrl":null,
+        "taxNumber":null,
+        "salutation":null,
+        "prefix":null,
+        "suffix":null,
+        "firstName":null,
+        "otherName":null,
+        "lastName":null,
+        "fullName":null,
+        "jobTitle":null,
+        "workPhone":null,
+        "mobilePhone":null,
+        "faxNumber":null,
+        "emailAddress":null,
+        "contactName":null,
+        "contactMethod":"N",
+        "organisationType":null,
+        "address":null,
+        "resourceCapacity":null,
+        "resourceWorkRate":null,
+        "resourceProdUnits":null,
+        "jobFileId":null,
+        "gtin":null,
+        "latitude":null,
+        "longitude":null
+    }
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Return the manager orgUnit of this Job
+
+This supports  partial response as described in the Example above.
+GET v1/job/4254/manager
+< 200
+< Content-Type: application/json
+{ 
+    {
+        "orgUnitId":5,
+        "accountId":null,
+        "orgUnitName":"RedInk Homes",
+        "parentOrgUnitId":null,
+        "street1":null,
+        "street2":null,
+        "suburb":null,
+        "state":null,
+        "postCode":null,
+        "webUrl":null,
+        "taxNumber":null,
+        "salutation":null,
+        "prefix":null,
+        "suffix":null,
+        "firstName":null,
+        "otherName":null,
+        "lastName":null,
+        "fullName":null,
+        "jobTitle":null,
+        "workPhone":null,
+        "mobilePhone":null,
+        "faxNumber":null,
+        "emailAddress":null,
+        "contactName":null,
+        "contactMethod":"N",
+        "organisationType":null,
+        "address":null,
+        "resourceCapacity":null,
+        "resourceWorkRate":null,
+        "resourceProdUnits":null,
+        "jobFileId":4254,
+        "gtin":null,
+        "latitude":null,
+        "longitude":null
+    }
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Returns  the resources of this Job
+
+This supports paging, partial response as described in the Example above.
+GET v1/job/4254/resource
+< 200
+< Content-Type: application/json
+{ 
+    "items": 
+    [
+        {
+            "orgUnitId":186,
+            "accountId":null,
+            "orgUnitName":"Water Corporation",
+            "parentOrgUnitId":null,
+            "street1":"HOMEBASE55 SALVADO ROAD",
+            "street2":null,
+            "suburb":"SUBIACO",
+            "state":"WA",
+            "postCode":"6008",
+            "webUrl":null,
+            "taxNumber":"58 718 598 ",    
+            "salutation":null,
+            "prefix":null,
+            "suffix":null,
+            "firstName":null,
+            "otherName":null,
+            "lastName":null,
+            "fullName":null,
+            "jobTitle":null,
+            "workPhone":"9388 1183",
+            "mobilePhone":"0402279108",
+            "faxNumber":"92752315",
+            "emailAddress":"test@abc.com.au",
+            "contactName":null,
+            "contactMethod":"F",
+            "organisationType":null,
+            "address":"HOMEBASE 55 SALVADO ROAD SUBIACO  WA  6008",
+            "resourceCapacity":null,
+            "resourceWorkRate":null,
+            "resourceProdUnits":null,
+            "jobFileId":"CH0000030 ",
+            "gtin":null,
+            "latitude":null,
+            "longitude":null
+        },
+        {
+            "orgUnitId":189,
+            "accountId":15,
+            "orgUnitName":"Rayco Plumbing",
+            "parentOrgUnitId":null,
+            "street1":null,
+            "street2":null,
+            "suburb":null,
+            "state":null,
+            "postCode":null,
+            "webUrl":null,
+            "taxNumber":null,
+            "salutation":null,
+            "prefix":null,
+            "suffix":null,
+            "firstName":null,
+            "otherName":null,
+            "lastName":null,
+            "fullName":null,
+            "jobTitle":null,
+            "workPhone":null,
+            "mobilePhone":null,
+            "faxNumber":null,
+            "emailAddress":null,
+            "contactName":"Rayco",
+            "contactMethod":"N",
+            "orgUnitType":null,
+            "address":null,
+            "resourceCapacity":null,
+            "resourceWorkRate":null,
+            "resourceProdUnits":null,
+            "jobFileId":"CH000004  ",
+            "gtin":null,
+            "latitude":null,
+            "longitude":null
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+--
+Task
+
+The following is a section of resources related to the tasks
+--
+
+
+List all task by authenticated user id
+
+This supports paging, partial response as described in the Example above.
+GET v1/task
+< 200
+< Content-Type: application/json
+{ "items": 
+    [
+        {
+        "idTask":26968,
+        "taskReference":"521220",
+        "itemName":"Stormwater Tanks Only",
+        "jobNo":"101343M",
+        "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+        "lotUnitNo":null,
+        "lotNo":"820",
+        "lotStreet1":"Belvedere Rise",
+        "lotSuburb":"Roleystone",
+        "ownerName":"RedInk Homes",
+        "plannedDate":null,
+        "estimatedStartDate":"2012-08-20T08:00:00",
+        "estimatedCompleteDate":"2012-08-20T08:00:00",
+        "completedDate":null,
+        "startDate":null,
+        "dueDate":null,
+        "acceptedDate":null,
+        "resourceStartDate":null,
+        "resourceCompleteDate":null,
+        "resourceDueDate":null,
+        "resourceStatus":"Accepted",
+        "managerId":104,
+        "ownerId":5,
+        "percentageComplete":0.000,
+        "resourcePercentageComplete":null,
+        "customMessage":"No Job Specific Instructions available",
+        "deliveryText":"No Standard Instructions available",
+        "managerFullName":"Luke Gilliland",
+        "latitude":"-32.1122836",
+        "longitude":"116.0697535",
+        "jobId":4254,
+        "resourceFullName":"Rayco Plumbing",
+        "resourceId":189,
+        "rejectReason":null,
+        "rejectDescription":null
+    },
+        {
+        "idTask":26969,
+        "taskReference":"521154",
+        "itemName":"Rain Water Tanks",
+        "jobNo":"101343M",
+        "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+        "lotUnitNo":null,"LotNo":"820",
+        "lotStreet1":"Belvedere Rise",
+        "lotSuburb":"Roleystone",
+        "sgOwnerName":"RedInk Homes",
+        "plannedDate":null,
+        "estimatedStartDate":"2012-08-20T08:00:00",
+        "estimatedCompleteDate":"2012-08-20T08:00:00",
+        "completedDate":null,
+        "startDate":null,
+        "dueDate":null,
+        "acceptedDate":null,
+        "resourceStartDate":null,
+        "resourceCompleteDate":null,
+        "resourceDueDate":null,
+        "resourceStatus":null,
+        "managerId":104,
+        "ownerId":5,
+        "percentageComplete":0.000,
+        "resourcePercentageComplete":null,
+        "customMessage":"No Job Specific Instructions available",
+        "deliveryText":"No Standard Instructions available",
+        "managerFullName":"Luke Gilliland",
+        "latitude":"-32.1122836",
+        "longitude":"116.0697535",
+        "jobId":4254,
+        "resourceFullName":"Rayco Plumbing",
+        "resourceId":189,
+        "rejectReason":null,
+        "rejectDescription":null
+    }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Get details of task by task id
+
+This supports partial response as described in the Example above.
+GET v1/task/26968
+< 200
+< Content-Type: application/json
+{ 
+    {
+        "idTask":26968,
+        "taskReference":"521220",
+        "itemName":"Stormwater Tanks Only",
+        "jobNo":"101343M",
+        "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+        "lotUnitNo":null,
+        "lotNo":"820",
+        "lotStreet1":"Belvedere Rise",
+        "lotSuburb":"Roleystone",
+        "ownerName":"RedInk Homes",
+        "plannedDate":null,
+        "estimatedStartDate":"2012-08-20T08:00:00",
+        "estimatedCompleteDate":"2012-08-20T08:00:00",
+        "completedDate":null,
+        "startDate":null,
+        "dueDate":null,
+        "acceptedDate":null,
+        "resourceStartDate":null,
+        "resourceCompleteDate":null,
+        "resourceDueDate":null,
+        "resourceStatus":"Accepted",
+        "managerId":104,
+        "ownerId":5,
+        "percentageComplete":0.000,
+        "resourcePercentageComplete":null,
+        "customMessage":"No Job Specific Instructions available",
+        "deliveryText":"No Standard Instructions available",
+        "managerFullName":"Luke Gilliland",
+        "latitude":"-32.1122836",
+        "longitude":"116.0697535",
+        "jobId":4254,
+        "resourceFullName":"Rayco Plumbing",
+        "resourceId":189,
+        "rejectReason":null,
+        "rejectDescription":null
+    } 
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+This method will create new Task.
+POST v1/task
+> Content-Type: application/json
+{
+    "idTask":null,
+    "taskReference":"521220",
+    "itemName":"Stormwater Tanks Only",
+    "jobNo":"101343M",
+    "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+    "lotUnitNo":null,
+    "lotNo":"820",
+    "lotStreet1":"Belvedere Rise",
+    "lotSuburb":"Roleystone",
+    "ownerName":"RedInk Homes",
+    "plannedDate":null,
+    "estimatedStartDate":"2012-08-20T08:00:00",
+    "estimatedCompleteDate":"2012-08-20T08:00:00",
+    "completedDate":null,
+    "startDate":null,
+    "dueDate":null,
+    "acceptedDate":null,
+    "resourceStartDate":null,
+    "resourceCompleteDate":null,
+    "resourceDueDate":null,
+    "resourceStatus":"Accepted",
+    "managerId":104,
+    "ownerId":5,
+    "percentageComplete":0.000,
+    "resourcePercentageComplete":null,
+    "customMessage":"No Job Specific Instructions available",
+    "deliveryText":"No Standard Instructions available",
+    "managerFullName":"Luke Gilliland",
+    "latitude":"-32.1122836",
+    "longitude":"116.0697535",
+    "jobId":4254,
+    "resourceFullName":"Rayco Plumbing",
+    "resourceId":189,
+    "rejectReason":null,
+    "rejectDescription":null
+}
+< 201
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+This method will update existing Task.
+
+PUT v1/task/1
+> Content-Type: application/json
+{
+    "idTask":1,
+    "taskReference":"521220",
+    "itemName":"Stormwater Tanks Only",
+    "jobNo":"101343M",
+    "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+    "lotUnitNo":null,
+    "lotNo":"820",
+    "lotStreet1":"Belvedere Rise",
+    "lotSuburb":"Roleystone",
+    "ownerName":"RedInk Homes",
+    "plannedDate":null,
+    "estimatedStartDate":"2012-08-20T08:00:00",
+    "estimatedCompleteDate":"2012-08-20T08:00:00",
+    "completedDate":null,
+    "startDate":null,
+    "dueDate":null,
+    "acceptedDate":null,
+    "resourceStartDate":null,
+    "resourceCompleteDate":null,
+    "resourceDueDate":null,
+    "resourceStatus":"Accepted",
+    "managerId":104,
+    "ownerId":5,
+    "percentageComplete":0.000,
+    "resourcePercentageComplete":null,
+    "customMessage":"No Job Specific Instructions available",
+    "deliveryText":"No Standard Instructions available",
+    "managerFullName":"Luke Gilliland",
+    "latitude":"-32.1122836",
+    "longitude":"116.0697535",
+    "jobId":4254,
+    "resourceFullName":"Rayco Plumbing",
+    "resourceId":189,
+    "rejectReason":null,
+    "rejectDescription":null
+}
+< 201
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+Delete the task by passing its id.
+
+DELETE  /v1/task/1
+< 200
+< Content-Type: application/json
+{ "status": "ok" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+
+List all task by task filter
+
+here task type parameter can be pass to filter tasks
+
+for sample :         
+        
+        REQUESTED  /v1/task?type=requested
+        BOOKEDING /v1/task?type=bookedin
+        FUTURE /v1/task?type=future
+        COMPLETE  /v1/task?type=complete
+        COMPLETIONMISMATCH  /v1/task?type=completionmismatch
+
+
+GET v1/tasks?type=requested
+< 200
+< Content-Type: application/json
+{ 
+    "items": 
+    [
+        {
+            "idTask":26968,
+            "taskReference":"521220",
+            "itemName":"Stormwater Tanks Only",
+            "jobNo":"101343M",
+            "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+            "lotUnitNo":null,
+            "lotNo":"820",
+            "lotStreet1":"Belvedere Rise",
+            "lotSuburb":"Roleystone",
+            "ownerName":"RedInk Homes",
+            "plannedDate":null,
+            "estimatedStartDate":"2012-08-20T08:00:00",
+            "estimatedCompleteDate":"2012-08-20T08:00:00",
+            "completedDate":null,
+            "startDate":null,
+            "dueDate":null,
+            "acceptedDate":null,
+            "resourceStartDate":null,
+            "resourceCompleteDate":null,
+            "resourceDueDate":null,
+            "resourceStatus":"Accepted",
+            "managerId":104,
+            "ownerId":5,
+            "percentageComplete":0.000,
+            "resourcePercentageComplete":null,
+            "customMessage":"No Job Specific Instructions available",
+            "deliveryText":"No Standard Instructions available",
+            "managerFullName":"Luke Gilliland",
+            "latitude":"-32.1122836",
+            "longitude":"116.0697535",
+            "jobId":4254,
+            "resourceFullName":"Rayco Plumbing",
+            "resourceId":189,
+            "rejectReason":null,
+            "rejectDescription":null
+        },
+        {
+            "idTask":26969,
+            "taskReference":"521154",
+            "itemName":"Rain Water Tanks",
+            "jobNo":"101343M",
+            "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+            "lotUnitNo":null,"LotNo":"820",
+            "lotStreet1":"Belvedere Rise",
+            "lotSuburb":"Roleystone",
+            "sgOwnerName":"RedInk Homes",
+            "plannedDate":null,
+            "estimatedStartDate":"2012-08-20T08:00:00",
+            "estimatedCompleteDate":"2012-08-20T08:00:00",
+            "completedDate":null,
+            "startDate":null,
+            "dueDate":null,
+            "acceptedDate":null,
+            "resourceStartDate":null,
+            "resourceCompleteDate":null,
+            "resourceDueDate":null,
+            "resourceStatus":null,
+            "managerId":104,
+            "ownerId":5,
+            "percentageComplete":0.000,
+            "resourcePercentageComplete":null,
+            "customMessage":"No Job Specific Instructions available",
+            "deliveryText":"No Standard Instructions available",
+            "managerFullName":"Luke Gilliland",
+            "latitude":"-32.1122836",
+            "longitude":"116.0697535",
+            "jobId":4254,
+            "resourceFullName":"Rayco Plumbing",
+            "resourceId":189,
+            "rejectReason":null,
+            "rejectDescription":null
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Get the purchase orders for specific Task.
+
+This supports paging, partial response as described in the Example above.
+GET v1/task/40686/purchaseOrder
+< 200
+< Content-Type: application/json
+{ 
+    "items": 
+    [
+        {   
+            "poHeaders":
+            [{
+                "poHeaderId":4,
+                "jobId":7964,
+                "resourceId":186,
+                "managingResourceId":null,
+                "requisitionId":null,
+                "poReference":"31348/B310",
+                "requisitionReference":"sgRequisitionReference",
+                "resourceExtReference":null,
+                "managingResourceExtRef":null,
+                "contactPerson":null,
+                "contactMethod":null,
+                "contactBy":null,
+                "poDate":"2013-02-20T12:42:08.057",
+                "poStatus":"I",
+                "approvedPercent":0.0,
+                "totalPrice":null,
+                "totalTax":null,
+                "partialPayment":true
+                "poLines":
+                    [{"$id":"3",
+                        "poLineId":9,
+                        "poHeaderId":4,
+                        "jobId":7964,
+                        "poLineReference":null,
+                        "sequenceNumber":10,
+                        "lineQuality":9306.00000,
+                        "lineCutLength":null,
+                        "costCode":"B310",
+                        "itemCode":"B310.0060",
+                        "itemDescription":"230x110x76 (STD) - FACE BRICK BRICK SUPPLIER: MIDLAND BRICK SELECTION: CAMEO",
+                        "uom":null,
+                        "unitPrice":572.4500,
+                        "extendedPrice":5327219.7000,
+                        "extendedTax":532721.9700
+                    }]
+            }]
+        }
+    ]    
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Get timesheet list by task id
+
+This supports paging, partial response as described in the Example above.
+
+
+GET v1/task/4254/timesheet
+< 200
+< Content-Type: application/json
+{
+  "items": [
+    {
+      "timesheetId": 1,
+      "jobNumber": "B346",
+      "taskId": "4254",
+      "recordedDate": "2013-04-01T00:00:00",
+      "startDate": "2013-04-01T00:00:00",
+      "durationHours": 5,
+      "comment": "My comments",
+      "isLocked": "false",
+      "resourceName": "crosby tiles"
+    },
+    {
+      "timesheetId": 2,
+      "jobNumber": "B346",
+      "taskId": "4254",
+      "recordedDate": "2013-04-01T00:00:00",
+      "startDate": "2013-04-01T00:00:00",
+      "durationHours": 15,
+      "comment": "My comments",
+      "isLocked": "false",
+      "resourceName": "crosby tiles"
+    }
+  ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Update task status by task id
+
+in this method we need to post task object with necessary details like "task status"
+,"comlete date for complete","rejection reason and description fo rejection status" etc .
+
+sample :         
+        
+        ACCEPT  /v1/task/28600/update?type=accept
+        CONFRIM /v1/task/28600/update?type=confirm
+        COMLETE /v1/task/28600/update?type=complete
+        REJECT  /v1/task/28600/update?type=reject
+        PROGRESS /v1/task/28600/update?type=progress
+
+
+
+PUT /v1/task/28600/update?type=accept
+> Content-Type: application/json
+{
+    "idTask":28600,
+    "taskReference":"521220",
+    "itemName":"Stormwater Tanks Only",
+    "jobNo":"101343M",
+    "lotAddress":"Lot 820 (#33) Belvedere Rise, Roleystone WA 6111",
+    "lotUnitNo":null,
+    "lotNo":"820",
+    "lotStreet1":"Belvedere Rise",
+    "lotSuburb":"Roleystone",
+    "ownerName":"RedInk Homes",
+    "plannedDate":null,
+    "estimatedStartDate":"2012-08-20T08:00:00",
+    "estimatedCompleteDate":"2012-08-20T08:00:00",
+    "completedDate":null,
+    "startDate":null,
+    "dueDate":null,
+    "acceptedDate":null,
+    "resourceStartDate":null,
+    "resourceCompleteDate":null,
+    "resourceDueDate":null,
+    "resourceStatus":"Accepted",
+    "managerId":104,
+    "ownerId":5,
+    "percentageComplete":0.000,
+    "resourcePercentageComplete":null,
+    "customMessage":"No Job Specific Instructions available",
+    "deliveryText":"No Standard Instructions available",
+    "managerFullName":"Luke Gilliland",
+    "latitude":"-32.1122836",
+    "longitude":"116.0697535",
+    "jobId":4254,
+    "resourceFullName":"Rayco Plumbing",
+    "resourceId":189,
+    "rejectReason":null,
+    "rejectDescription":null
+}
+< 200
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+--
+User
+
+The following is a section of resources related to the User
+--
+
+
+List all Users 
+
+This supports paging, partial response as described in the Example above.
+GET v1/user
+< 200
+< Content-Type: application/json
+{ 
+    "items": 
+    [
+        {
+            "userId":277,
+            "accountId":1,
+            "directManagerId":2,
+            "userName":"test@xyz.com",
+            "password":"gbj!@123",
+            "confirmPassword":null,
+            "suffix":null,
+            "salutation":null,
+            "firstName":"Crosby",
+            "otherName":null,
+            "lastName":"Tiles",
+            "fullName":"Cosby Tiles",
+            "jobTitle":null,
+            "workPhone":null,
+            "mobilePhone":null,
+            "faxNumber":null,
+            "emailAddress":"test@abc.com.au",
+            "assignJobTask":null,
+            "orgUnitList":[]
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Get details of user by user id
+
+This supports  partial response as described in the Example above.
+GET v1/user/277
+< 200
+< Content-Type: application/json
+{ 
+    { 
+        "userId":277,
+        "accountId":1,
+        "directManagerId":2,
+        "userName":"test@xyz.com",
+        "password":"gbj!@123",
+        "confirmPassword":null,
+        "suffix":null,
+        "salutation":null,
+        "firstName":"Crosby",
+        "otherName":null,
+        "lastName":"Tiles",
+        "fullName":"Cosby Tiles",
+        "jobTitle":null,
+        "workPhone":null,
+        "mobilePhone":null,
+        "faxNumber":null,
+        "emailAddress":"test@abc.com.au",
+        "assignJobTask":null,
+        "orgUnitList":[]
+    }
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Get all the organisations that a specific user has links to
+
+This supports paging, partial response as described in the Example above.
+GET v1/user/15/orgUnit
+< 200
+< Content-Type: application/json
+{ 
+    "items": 
+    [
+        {   
+            "orgUnitId":15,
+            "accountId":17,
+            "orgUnitName":"My Team A",
+            "parentOrgUnitId":null,
+            "locations": [ {"type": "Office", "address": {
+                    "address":"Lot 7484 (#7) Croft Way, The Vines WA 6069",
+                    "lotNo":"7484",
+                    "streetNo":null,
+                    "unitNo":null,
+                    "levelNo":null,
+                    "street1":"Croft Way",
+                    "street2":"",
+                    "suburb":"The Vines",
+                    "state":"WA",
+                    "postCode":"6069",
+                    "country": "Australia"
+                    "standardDirection":null,
+                    "standardInstruction":null,
+                    "latitude":"-31.75637160",
+                    "longitude":"115.98818830"        
+                }}],
+            "webURL":null,
+            "taxNumber":null,
+            "salutation":null,
+            "prefix":null,
+            "suffix":null,
+            "firstName":"First Name",
+            "otherName":null,
+            "lastName":"Last Name",
+            "fullName":"First Name Last Name",
+            "jobTitle":"Job Title",
+            "workPhone":"123456",
+            "mobilePhone":"9876543210",
+            "faxNumber":"25896",
+            "emailAddress":"test@gmail.com",
+            "contactName":"First Name Last Name",
+            "contactMethod":"E",
+            "orgUnitType":3,
+            "address":null,
+            "resourceCapacity":null,
+            "resourceWorkRate":null,
+            "resourceProdUnits":null,
+            "jobFileId":null,
+            "gtin":null
+        }
+    ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Create New User 
+This method will create new user. We need to provide user information as below.
+Username, DirectManagerId,Password,JobTitle etc.
+POST /v1/user
+> Content-Type: application/json
+{
+    "userId":null,
+    "accountId":null,
+    "directManagerId":null,
+    "userName":"test@xyz.com",
+    "password":"gbj!@123",
+    "confirmPassword":null,
+    "suffix":null,
+    "salutation":null,
+    "firstName":"Crosby",
+    "otherName":null,
+    "lastName":"Tiles",
+    "fullName":"Cosby Tiles",
+    "jobTitle":null,
+    "workPhone":null,
+    "mobilePhone":null,
+    "faxNumber":null,
+    "emailAddress":"test@abc.com.au",
+    "assignJobTask":null    
+}
+< 201
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Update Existing User 
+This method will update existing user. We need to provide user information as below.
+Username, DirectManagerId,Password,JobTitle etc.
+PUT /v1/user/277
+> Content-Type: application/json
+{
+    "userId":277,
+    "accountId":1,
+    "directManagerId":2,
+    "userName":"test@xyz.com",
+    "password":"gbj!@123",
+    "confirmPassword":null,
+    "suffix":null,
+    "salutation":null,
+    "firstName":"Crosby",
+    "otherName":null,
+    "lastName":"Tiles",
+    "fullName":"Cosby Tiles",
+    "jobTitle":null,
+    "workPhone":null,
+    "mobilePhone":null,
+    "faxNumber":null,
+    "emailAddress":"test@abc.com.au",
+    "assignJobTask":null
+}
+< 200
+< Content-Type: application/json
+{ "status": "ok"}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Delete the user by passing its id.
+In the mentioned case below user having id 233 will be deleted.
+
+DELETE  /v1/user/233
+< 200
+< Content-Type: application/json
+{ "status": "ok" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+--
+Notifications
+--
+
+--
+
+The following is a section of resources related to the Notifications
+--
+
+List all Notifications
+GET v1/notifications
+< 200
+< Content-Type: application/json
+{ "items": 
+    [
+        { "date":"1997-07-16T19:20:30.45+01:00", "action": "newtask", "description": "You have been given a new task" }
+    ] 
+}
+
+
+--
+Documents
+
+The following is a section of resources related to the Documents
+--
+
+List all Documents
+GET v1/documents
+< 200
+< Content-Type: application/json
+{ "items": 
+    [
+        {"description": "You have been given a new task" "authorUser": 13, "owner": 1 ,"createdDate":"1997-07-16T19:20:30.45+01:00"}
+    ] 
+}
+
+
+--
+Timesheet
+
+The following is a section of resources related to timesheet
+--
+
+List  timesheet.
+
+This supports paging, partial response as described in the Example above.
+GET v1/timesheet
+< 200
+< Content-Type: application/json
+{
+  "items": [
+    {
+      "timesheetId": 1,
+      "jobNumber": "B346",
+      "taskId": "45621",
+      "recordedDate": "2013-04-01T00:00:00",
+      "startDate": "2013-04-01T00:00:00",
+      "durationHours": 5,
+      "comment": "My comments",
+      "isLocked": "false",
+      "resourceName": "crosby tiles"
+    },
+    {
+      "timesheetId": 2,
+      "jobNumber": "B344",
+      "taskId": "4541",
+      "recordedDate": "2013-04-01T00:00:00",
+      "startDate": "2013-04-01T00:00:00",
+      "durationHours": 15,
+      "comment": "My comments",
+      "isLocked": "false",
+      "resourceName": "crosby tiles"
+    }
+  ]
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+Get all details of timesheet by timesheet id
+
+This supports  partial response as described in the Example above.
+GET v1/timesheet/1
+< 200
+< Content-Type: application/json 
+{
+  "timesheetId": 1,
+  "jobNumber": "B346",
+  "taskId": "45621",
+  "recordedDate": "2013-04-01T00:00:00",
+  "startDate": "2013-04-01T00:00:00",
+  "durationHours": 5,
+  "comment": "My comments",
+  "isLocked": "false",
+  "resourceName": "crosby tiles"
+}
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+This method will create new timesheet.
+POST v1/timesheet
+> Content-Type: application/json
+{
+      "timesheetId": null,
+      "jobNumber": "null",
+      "taskId": "45621",
+      "RecordedDate": "2013-04-01T00:00:00",
+      "startDate": "2013-04-01T00:00:00",
+      "durationHours": 5,
+      "comment": "My comments",
+      "isLocked": null,
+      "resourceName": "crosby tiles"
+}
+< 201
+< Content-Type: application/json
+{ "status": "created" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+This method will update the existing timesheet.
+PUT v1/timesheet/1
+> Content-Type: application/json
+{
+      "timesheetId": 1,
+      "jobNumber": "B346",
+      "taskId": "45621",
+      "recordedDate": "2013-04-01T00:00:00",
+      "startDate": "2013-04-01T00:00:00",
+      "durationHours": 5,
+      "comment": "My comments",
+      "isLocked": "false",
+      "resourceName": "crosby tiles"
+}
+< 200
+< Content-Type: application/json
+{ "status": "OK" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+Delete the timesheet by passing its id.
+
+DELETE  /v1/timesheet/1
+< 200
+< Content-Type: application/json
+{ "status": "OK" }
++++++
+< 404
+< Content-Type: application/json
+{ "error": "requested object not found", "status":404, "details":"we looked 404 times but could not find what you want" }
++++++
+< 500
+< Content-Type: application/json
+{ "error": "Internal Server Error", "status":500, "details":"There is some internal server error occured while executing your request." }
+
+
+
+
+
